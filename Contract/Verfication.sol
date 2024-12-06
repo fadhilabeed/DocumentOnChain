@@ -29,7 +29,6 @@ contract Verification {
     modifier validAddress(address _addr) {
             assert(_addr != address(0)); _; }
 
-   
     modifier authorised_Exporter(bytes32  _doc){
 
          if (keccak256(abi.encodePacked((Exporters[msg.sender].info )))!= keccak256(abi.encodePacked((docHashes[_doc].info))))

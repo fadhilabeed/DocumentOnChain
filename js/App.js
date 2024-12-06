@@ -3,7 +3,7 @@ const projectId = "05c0f24f8bf690b3b582";
 //Your api secret in ifura.io
 const projectSecret = "428275d8a3ec40d8d26ea08d4cf1138e0d901f79811679a9830caa7b5a5accc7";
 window.CONTRACT = {
-  address: "0xfA31BfefC5DEE7153a0867Ce73403aF55E1Acb6A",
+  address: "0x2CAde4022FdAE9Ee53bD6F9CC2cB8fBF6C1558C3",
   network: "https://polygon-rpc.com/",
   explore: "https://polygonscan.com/",
   // Your Contract ABI
@@ -554,10 +554,13 @@ async function uploadFileToIpfs() {
   const formData = new FormData();
   formData.append("file", file);
 
-  const pinataApiKey = '05c0f24f8bf690b3b582'; // Replace with your Pinata API Key
-  const pinataSecretApiKey = '428275d8a3ec40d8d26ea08d4cf1138e0d901f79811679a9830caa7b5a5accc7'; // Replace with your Pinata Secret API Key
+  const pinataApiKey = 'c7eda633039fac7c23be'; // Replace with your Pinata API Key
+  const pinataSecretApiKey = 'bde99ef3e0cda309886c32d95b314e87d46ce1b07cd3a2315e86f110fb731e97'; // Replace with your Pinata Secret API Key
 
   try {
+    console.log("Starting file upload to IPFS...");
+    const startTime = performance.now(); // Start timer
+
     // Make POST request to upload the file to Pinata
     const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
@@ -573,15 +576,16 @@ async function uploadFileToIpfs() {
     }
 
     const data = await response.json();
-    console.log(data.IpfsHash); // Response data
-    // Return the CID to the addDocHash to store it in the Contract
+    const endTime = performance.now(); // End timer
+    console.log(`File uploaded to IPFS in ${(endTime - startTime).toFixed(2)} ms`);
+    console.log(`IPFS CID: ${data.IpfsHash}`);
+
     return data.IpfsHash;
   } catch (error) {
     console.error("Error uploading file:", error);
     throw error;
   }
 }
-
 
 async function sendHash() {
   $("#loader").removeClass("d-none");
@@ -592,32 +596,42 @@ async function sendHash() {
   $("#upload_file_button").attr("disabled", true);
   get_ChainID();
 
-  const CID = await uploadFileToIpfs();
-  await uploadFileToIpfs();
-  if (window.hashedfile.length > 4) {
-    await window.contract.methods
-      .addDocHash(window.hashedfile, CID)
-      .send({ from: window.userAddress })
-      .on("transactionHash", function (_hash) {
-        $("#note").html(
-          `<h5 class="text-info p-1 text-center">Please wait for transaction to be mined...</h5>`
-        );
-      })
+  try {
+    const CID = await uploadFileToIpfs(); // Upload file and get CID
 
-      .on("receipt", function (receipt) {
-        printUploadInfo(receipt);
-        generateQRCode();
-      })
+    if (window.hashedfile.length > 4) {
+      console.log("Starting transaction to upload document hash to blockchain...");
+      const startTime = performance.now(); // Start timer
 
-      .on("confirmation", function (confirmationNr) {})
-      .on("error", function (error) {
-        console.log(error.message);
-        $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
-        $("#loader").addClass("d-none");
-        $("#upload_file_button").slideDown();
-      });
+      await window.contract.methods
+        .addDocHash(window.hashedfile, CID)
+        .send({ from: window.userAddress })
+        .on("transactionHash", function (_hash) {
+          $("#note").html(
+            `<h5 class="text-info p-1 text-center">Please wait for transaction to be mined...</h5>`
+          );
+        })
+        .on("receipt", function (receipt) {
+          const endTime = performance.now(); // End timer
+          console.log(`Document hash uploaded to blockchain in ${(endTime - startTime).toFixed(2)} ms`);
+          printUploadInfo(receipt);
+        })
+        .on("confirmation", function (confirmationNr) {})
+        .on("error", function (error) {
+          console.log(error.message);
+          $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
+          $("#loader").addClass("d-none");
+          $("#upload_file_button").slideDown();
+        });
+    }
+  } catch (error) {
+    console.error("Error during sendHash process:", error);
+    $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
+    $("#loader").addClass("d-none");
+    $("#upload_file_button").slideDown();
   }
 }
+
 
 //delete document hash from the contract
 //only the exporter who add it can delete it
