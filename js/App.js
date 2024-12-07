@@ -323,29 +323,46 @@ window.onload = async () => {
 };
 
 async function verify_Hash() {
-  //Show the loading
+  console.log("Starting document hash verification...");
+  const startTime = performance.now(); // Start timer
+
+  // Show the loading spinner
   $("#loader").show();
 
   if (window.hashedfile) {
-    /*   I used the contract address (window.CONTRACT.address) as the caller of the function 'findDocHash'
-        you can use any address because it used just for reading info from the contract
-    */
-    await contract.methods
-      .findDocHash(window.hashedfile)
-      .call({ from: window.userAddress })
-      .then((result) => {
-        $(".transaction-status").removeClass("d-none");
-        window.newHash = result;
-        if ((result[0] != 0) & (result[1] != 0)) {
-          //Doc Verified
-          print_verification_info(result, true);
-        } else {
-          //Doc not Verified
-          print_verification_info(result, false);
-        }
-      });
+    try {
+      /* I used the contract address (window.CONTRACT.address) as the caller of the function 'findDocHash'
+        you can use any address because it is just for reading info from the contract
+      */
+      const result = await contract.methods
+        .findDocHash(window.hashedfile)
+        .call({ from: window.userAddress });
+
+      const endTime = performance.now(); // End timer
+      console.log(`Document hash verified in ${(endTime - startTime).toFixed(2)} ms`);
+
+      $(".transaction-status").removeClass("d-none");
+      window.newHash = result;
+
+      if ((result[0] != 0) & (result[1] != 0)) {
+        // Doc Verified
+        print_verification_info(result, true);
+      } else {
+        // Doc not Verified
+        print_verification_info(result, false);
+      }
+    } catch (error) {
+      console.error("Error verifying document hash:", error);
+    } finally {
+      // Hide the loading spinner
+      $("#loader").hide();
+    }
+  } else {
+    console.error("No hashed file found for verification.");
+    $("#loader").hide();
   }
 }
+
 
 function checkURL() {
   let url_string = window.location.href;
@@ -601,7 +618,7 @@ async function sendHash() {
 
     if (window.hashedfile.length > 4) {
       console.log("Starting transaction to upload document hash to blockchain...");
-      const startTime = performance.now(); // Start timer
+      const startTime2 = performance.now(); // Start timer
 
       await window.contract.methods
         .addDocHash(window.hashedfile, CID)
@@ -612,8 +629,8 @@ async function sendHash() {
           );
         })
         .on("receipt", function (receipt) {
-          const endTime = performance.now(); // End timer
-          console.log(`Document hash uploaded to blockchain in ${(endTime - startTime).toFixed(2)} ms`);
+          const endTime2 = performance.now(); // End timer
+          console.log(`Document hash uploaded to blockchain in ${(endTime2 - startTime2).toFixed(2)} ms`);
           printUploadInfo(receipt);
         })
         .on("confirmation", function (confirmationNr) {})
@@ -645,33 +662,51 @@ async function deleteHash() {
   get_ChainID();
 
   if (window.hashedfile) {
-    await window.contract.methods
-      .deleteHash(window.hashedfile)
-      .send({ from: window.userAddress })
-      .on("transactionHash", function (hash) {
-        $("#note").html(
-          `<h5 class="text-info p-1 text-center">Please wait for transaction to be mined</h5>`
-        );
-      })
+    try {
+      console.log("Starting transaction to delete hash...");
+      const startTime = performance.now(); // Start timer
 
-      .on("receipt", function (receipt) {
-        $("#note").html(
-          `<h5 class="text-info p-1 text-center">Document Deleted</h5>`
-        );
+      await window.contract.methods
+        .deleteHash(window.hashedfile)
+        .send({ from: window.userAddress })
+        .on("transactionHash", function (hash) {
+          $("#note").html(
+            `<h5 class="text-info p-1 text-center">Please wait for transaction to be mined</h5>`
+          );
+        })
 
-        $("#loader").addClass("d-none");
-        $("#upload_file_button").slideDown();
-      })
+        .on("receipt", function (receipt) {
+          const endTime = performance.now(); // End timer
+          console.log(`Hash deleted from blockchain in ${(endTime - startTime).toFixed(2)} ms`);
 
-      .on("confirmation", function (confirmationNr) {
-        console.log(confirmationNr);
-      })
-      .on("error", function (error) {
-        console.log(error.message);
-        $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
-        $("#loader").addClass("d-none");
-        $("#upload_file_button").slideDown();
-      });
+          $("#note").html(
+            `<h5 class="text-info p-1 text-center">Document Deleted</h5>`
+          );
+
+          $("#loader").addClass("d-none");
+          $("#upload_file_button").slideDown();
+        })
+
+        .on("confirmation", function (confirmationNr) {
+          console.log(`Confirmation received: ${confirmationNr}`);
+        })
+
+        .on("error", function (error) {
+          console.error("Error deleting hash:", error.message);
+          $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
+          $("#loader").addClass("d-none");
+          $("#upload_file_button").slideDown();
+        });
+    } catch (error) {
+      console.error("Error during deleteHash execution:", error);
+      $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
+      $("#loader").addClass("d-none");
+      $("#upload_file_button").slideDown();
+    }
+  } else {
+    $("#note").html(
+      `<h5 class="text-center text-warning">No hash available to delete</h5>`
+    );
   }
 }
 
@@ -799,6 +834,9 @@ async function addExporter() {
     get_ChainID();
 
     try {
+      console.log("Starting transaction to add exporter...");
+      const startTime = performance.now(); // Start timer
+
       await window.contract.methods
         .add_Exporter(address, info)
         .send({ from: window.userAddress })
@@ -810,6 +848,9 @@ async function addExporter() {
         })
 
         .on("receipt", function (receipt) {
+          const endTime = performance.now(); // End timer
+          console.log(`Exporter added to blockchain in ${(endTime - startTime).toFixed(2)} ms`);
+
           $("#loader").addClass("d-none");
           $("#ExporterBtn").slideDown();
           $("#edit").slideDown();
@@ -828,6 +869,7 @@ async function addExporter() {
           $("#ExporterBtn").slideDown();
         });
     } catch (error) {
+      console.error("Error adding exporter:", error);
       $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
       $("#loader").addClass("d-none");
       $("#ExporterBtn").slideDown();
@@ -836,10 +878,11 @@ async function addExporter() {
     }
   } else {
     $("#note").html(
-      `<h5 class="text-center text-warning">You need to provide address & inforamtion to add  </h5>`
+      `<h5 class="text-center text-warning">You need to provide address & information to add</h5>`
     );
   }
 }
+
 
 async function getExporterInfo() {
   await window.contract.methods
@@ -888,6 +931,9 @@ async function editExporter() {
     get_ChainID();
 
     try {
+      console.log("Starting transaction to edit exporter...");
+      const startTime = performance.now(); // Start timer
+
       await window.contract.methods
         .alter_Exporter(address, info)
         .send({ from: window.userAddress })
@@ -899,6 +945,9 @@ async function editExporter() {
         })
 
         .on("receipt", function (receipt) {
+          const endTime = performance.now(); // End timer
+          console.log(`Exporter updated on blockchain in ${(endTime - startTime).toFixed(2)} ms`);
+
           $("#loader").addClass("d-none");
           $("#ExporterBtn").slideDown();
           console.log(receipt);
@@ -915,6 +964,7 @@ async function editExporter() {
           $("#ExporterBtn").slideDown();
         });
     } catch (error) {
+      console.error("Error editing exporter:", error);
       $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
       $("#loader").addClass("d-none");
       $("#ExporterBtn").slideDown();
@@ -923,7 +973,7 @@ async function editExporter() {
     }
   } else {
     $("#note").html(
-      `<h5 class="text-center text-warning">You need to provide address & inforamtion to update </h5>`
+      `<h5 class="text-center text-warning">You need to provide address & information to update</h5>`
     );
   }
 }
@@ -943,6 +993,9 @@ async function deleteExporter() {
     get_ChainID();
 
     try {
+      console.log("Starting transaction to delete exporter...");
+      const startTime = performance.now(); // Start timer
+
       await window.contract.methods
         .delete_Exporter(address)
         .send({ from: window.userAddress })
@@ -954,6 +1007,9 @@ async function deleteExporter() {
         })
 
         .on("receipt", function (receipt) {
+          const endTime = performance.now(); // End timer
+          console.log(`Exporter deleted from blockchain in ${(endTime - startTime).toFixed(2)} ms`);
+
           $("#loader").addClass("d-none");
           $("#ExporterBtn").slideDown();
           $("#edit").slideDown();
@@ -963,8 +1019,9 @@ async function deleteExporter() {
             `<h5 class="text-info">Exporter Deleted Successfully</h5>`
           );
         })
+
         .on("error", function (error) {
-          console.log(error.message);
+          console.error("Error deleting exporter:", error.message);
           $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
           $("#loader").addClass("d-none");
           $("#ExporterBtn").slideDown();
@@ -972,6 +1029,7 @@ async function deleteExporter() {
           $("#delete").slideDown();
         });
     } catch (error) {
+      console.error("Error deleting exporter:", error);
       $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
       $("#loader").addClass("d-none");
       $("#ExporterBtn").slideDown();
