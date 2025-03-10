@@ -708,7 +708,7 @@ async function deleteHash() {
   }
 }
 
-//get current time
+//get current time.
 function getTime() {
   let d = new Date();
   a =
