@@ -402,12 +402,12 @@ async function get_Sha3() {
 }
 
 function print_verification_info(result, is_verified) {
-  //Default Image for not Verified Docunets
+  // Default Image for not Verified Documents
   document.getElementById("student-document").src = "./files/notvalid.svg";
   $("#loader").hide();
-  // when document not verfied
+
+  // When document is not verified
   if (!is_verified) {
-    // document.getElementById('download-document').classList.add('d-none')
     $("#download-document").hide();
     $("#doc-status").html(`<h3 class="text-danger">
         Certificate not Verified
@@ -424,8 +424,8 @@ function print_verification_info(result, is_verified) {
     $("#blockNumber").hide();
     $(".transaction-status").show();
   } else {
+    // When document is verified
     $("#download-document").show();
-    // when document verfied
     $("#college-name").show();
     $("#contract-address").show();
     $("#time-stamps").show();
@@ -435,7 +435,8 @@ function print_verification_info(result, is_verified) {
     t.setSeconds(result[1]);
     console.log(result[1]);
     t.setHours(t.getHours() + 3);
-    // hide loader
+
+    // Hide loader
     $("#loader").hide();
     $("#doc-status").html(`<h3 class="text-info">
         Certificate Verified Successfully
@@ -460,11 +461,11 @@ function print_verification_info(result, is_verified) {
     $("#blockNumber").html(
       `<span class="text-info"><i class="fa-solid fa-cube"></i></span> ${result[0]}`
     );
-    document.getElementById(
-      "student-document"
-    ).src = `https://ipfs.io/ipfs/${result[3]}`;
-    document.getElementById("download-document").href =
-      document.getElementById("student-document").src;
+
+    // Use Pinata's gateway for IPFS
+    document.getElementById("student-document").src = `https://gateway.pinata.cloud/ipfs/${result[3]}`;
+    document.getElementById("download-document").href = `https://gateway.pinata.cloud/ipfs/${result[3]}`;
+
     $(".transaction-status").show();
   }
 }
@@ -515,11 +516,6 @@ function printUploadInfo(result) {
   $("#time-stamps").html('<i class="fa-solid fa-clock mx-1"></i>' + getTime());
   $("#blockNumber").html(
     `<i class="fa-solid fa-link mx-1"></i>${result.blockNumber}`
-  );
-  $("#blockHash").html(
-    `<i class="fa-solid fa-shield mx-1"></i> ${truncateAddress(
-      result.blockHash
-    )}`
   );
   $("#to-netowrk").html(
     `<i class="fa-solid fa-chart-network"></i> ${window.chainID}`
@@ -624,6 +620,7 @@ async function sendHash() {
         .addDocHash(window.hashedfile, CID)
         .send({ from: window.userAddress })
         .on("transactionHash", function (_hash) {
+          console.log(`Transaction hash: ${_hash}`); // Log transaction hash
           $("#note").html(
             `<h5 class="text-info p-1 text-center">Please wait for transaction to be mined...</h5>`
           );
@@ -633,7 +630,9 @@ async function sendHash() {
           console.log(`Document hash uploaded to blockchain in ${(endTime2 - startTime2).toFixed(2)} ms`);
           printUploadInfo(receipt);
         })
-        .on("confirmation", function (confirmationNr) {})
+        .on("confirmation", function (confirmationNr) {
+          console.log(`Confirmation received: ${confirmationNr}`);
+        })
         .on("error", function (error) {
           console.log(error.message);
           $("#note").html(`<h5 class="text-center">${error.message}</h5>`);
@@ -648,7 +647,6 @@ async function sendHash() {
     $("#upload_file_button").slideDown();
   }
 }
-
 
 //delete document hash from the contract
 //only the exporter who add it can delete it
@@ -1102,3 +1100,4 @@ function printTransactions(data) {
   }
   $("#recent-header").show();
 }
+
