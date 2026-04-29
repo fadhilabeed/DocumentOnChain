@@ -1,7 +1,4 @@
-//Your IPFS api key in ifura.io (now pinata)
-const projectId = "05c0f24f8bf690b3b582";
-//Your api secret in ifura.io
-const projectSecret = "428275d8a3ec40d8d26ea08d4cf1138e0d901f79811679a9830caa7b5a5accc7";
+window.APP_CONFIG = window.APP_CONFIG || {};
 window.CONTRACT = {
   address: "0x2CAde4022FdAE9Ee53bD6F9CC2cB8fBF6C1558C3",
   network: "https://polygon-rpc.com/",
@@ -288,7 +285,7 @@ window.onload = async () => {
       </a>`);
 
       //if admin is viewed then show the doc,exporter counters
-      if (window.location.pathname == "/admin.html") await getCounters();
+      if (window.location.pathname.endsWith("/index.html") || window.location.pathname === "/") await getCounters();
 
       await getExporterInfo();
       await get_ChainID();
@@ -567,10 +564,14 @@ async function uploadFileToIpfs() {
   const formData = new FormData();
   formData.append("file", file);
 
-  const pinataApiKey = 'c7eda633039fac7c23be'; // Replace with your Pinata API Key
-  const pinataSecretApiKey = 'bde99ef3e0cda309886c32d95b314e87d46ce1b07cd3a2315e86f110fb731e97'; // Replace with your Pinata Secret API Key
+  const pinataApiKey = window.APP_CONFIG.pinataApiKey;
+  const pinataSecretApiKey = window.APP_CONFIG.pinataSecretApiKey;
 
   try {
+    if (!pinataApiKey || !pinataSecretApiKey) {
+      throw new Error("Pinata credentials are not configured in js/config.js");
+    }
+
     console.log("Starting file upload to IPFS...");
     const startTime = performance.now(); // Start timer
 
@@ -1100,4 +1101,3 @@ function printTransactions(data) {
   }
   $("#recent-header").show();
 }
-

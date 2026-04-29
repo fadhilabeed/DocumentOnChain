@@ -1,5 +1,5 @@
 {
-  "name": "eth",
+  "name": "documentonchain",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,6 +10,12 @@
   "dependencies": {
     "web3": "^1.7.0"
   },
-  "keywords": [],
-  "description": ""
+  "keywords": [
+    "blockchain",
+    "solidity",
+    "web3",
+    "polygon",
+    "ipfs"
+  ],
+  "description": "Blockchain-based document verification app using Polygon, MetaMask, and IPFS."
 }
